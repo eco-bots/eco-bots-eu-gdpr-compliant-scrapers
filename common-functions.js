@@ -239,6 +239,23 @@ const extractFundingWithRetry = withRetry(extractFunding);
 const extractRequirementsWithRetry = withRetry(extractRequirements);
 const extractContactWithRetry = withRetry(extractContact);
 
+async function getLinksFromSelector(page, selector, url) {
+    const elements = await page.$$(selector);
+    const urlRoot = new URL(url).origin;
+    const links = await Promise.all(
+        elements.map(async (element) => {
+            const href = await element.evaluate(link => link.getAttribute('href'));
+            if (href.startsWith('http')) {
+                return href;
+            } else {
+                return urlRoot + '/' + href;
+            }
+        })
+    );
+
+    return links;
+}
+
 module.exports = {
     initiate,
     escapeCSV,
@@ -256,5 +273,6 @@ module.exports = {
     login,
     readCSV,
     wordToNumber,
+    getLinksFromSelector,
 };
 
