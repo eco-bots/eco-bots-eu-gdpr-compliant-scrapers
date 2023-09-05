@@ -178,13 +178,13 @@ async function login(page, username, password, usernameSelector, passwordSelecto
     await page.waitForTimeout(1000);
 }
 
-function withRetry(fn, maxRetries = 3, delay = 500) {
+function withRetry(fn, maxRetries = 3, requestTimeout = 20000, initialDelay = 5000) {
     return async function (...args) {
         for (let i = 0; i <= maxRetries; i++) {
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => {
                     reject(new Error('Request timed out.'));
-                }, delay * Math.pow(2, i));
+                }, requestTimeout);
             });
 
             try {
@@ -197,7 +197,7 @@ function withRetry(fn, maxRetries = 3, delay = 500) {
                     throw new Error(`Function failed after ${maxRetries} retries.`);
                 }
 
-                await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+                await new Promise(res => setTimeout(res, initialDelay * Math.pow(2, i)));
             }
         }
     };
