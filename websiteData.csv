@@ -1,0 +1,3 @@
+fileName,url,pageVariant,pageSelector,callSelector,callContentSelector
+data/fr/occitanie.csv,https://www.europe-en-occitanie.eu/-Les-financements-#pagination_liste_articles,pagination,"li[class=""pagination-item""] > a",.liste-articles--liste a,body
+data/fr/grandEst.csv,https://beeurope.grandest.fr/aides/?call_projects=1,standard,,.aides > div:nth-child(2) a,main
