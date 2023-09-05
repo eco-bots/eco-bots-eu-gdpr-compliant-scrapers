@@ -119,8 +119,17 @@ async function evaluateStatus(endDate) {
 }
 
 async function extractApplicationUrl(text, openAI) {
-    const applicationUrl = await openAI.chat.completions.create({
+    const applicationUrl = openAI.chat.completions.create({
         messages: [{ role: 'user', content: text + 'Extract the application URL of the project from the text. Return only the URL itself. If the URL is not given say NA.' }],
+        model: 'gpt-3.5-turbo',
+    });
+
+    return applicationUrl.choices[0]['message']['content'];
+}
+
+async function extractDocumentUrls(text, openAI) {
+    const applicationUrl = openAI.chat.completions.create({
+        messages: [{ role: 'user', content: text + 'Extract the document URLs of the project that are not application URLs from the text. Return only the URLs itself. If the URLs are not given say NA.' }],
         model: 'gpt-3.5-turbo',
     });
 
@@ -167,19 +176,57 @@ async function login(page, username, password, usernameSelector, passwordSelecto
     await page.waitForTimeout(1000);
 }
 
+const withRetry = (fn, maxRetries = 3, delay = 5000, timeout = 20000) => {
+    return async (...args) => {
+      let retries = 0;
+      let currentDelay = delay;
+  
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          reject(new Error('Function timed out.'));
+        }, timeout);
+      });
+  
+      while (retries < maxRetries) {
+        const fnPromise = fn(...args);
+        try {
+          return await Promise.race([fnPromise, timeoutPromise]);
+        } catch (error) {
+          retries++;
+          if (retries >= maxRetries) {
+            throw new Error(`Function failed after ${maxRetries} retries.`);
+          }
+          await new Promise(resolve => setTimeout(resolve, currentDelay));
+          currentDelay = currentDelay * 2;
+        }
+      }
+    };
+};
+
+const extractNameWithRetry = withRetry(extractName);
+const extractDescriptionWithRetry = withRetry(extractDescription);
+const extractStartDateWithRetry = withRetry(extractStartDate);
+const extractEndDateWithRetry = withRetry(extractEndDate);
+const extractFundingWithRetry = withRetry(extractFunding);
+const extractRequirementsWithRetry = withRetry(extractRequirements);
+const extractContactWithRetry = withRetry(extractContact);
+const extractApplicationUrlWithRetry = withRetry(extractApplicationUrl);
+const extractDocumentUrlsWithRetry = withRetry(extractDocumentUrls);
+
 module.exports = {
     initiate,
     escapeCSV,
     prepareCSV,
-    extractName,
-    extractDescription,
-    extractStartDate,
-    extractEndDate,
-    extractFunding,
-    extractRequirements,
-    extractContact,
+    extractNameWithRetry,
+    extractDescriptionWithRetry,
+    extractStartDateWithRetry,
+    extractEndDateWithRetry,
+    extractFundingWithRetry,
+    extractRequirementsWithRetry,
+    extractContactWithRetry,
     evaluateStatus,
-    extractApplicationUrl,
+    extractApplicationUrlWithRetry,
+    extractDocumentUrlsWithRetry,
     writeToCSV,
     clickButtonWhileVisible,
     login,
