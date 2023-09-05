@@ -4,7 +4,7 @@ const csv = require("csv-parser");
 const moment = require('moment');
 const puppeteer = require("puppeteer-extra");
 
-async function initiate (url) {
+async function initiate () {
     console.log("-----------------------------");
     console.log("Starting...");
     
@@ -16,12 +16,6 @@ async function initiate (url) {
     console.log("Opening Browser");
     var page = await browser.newPage();
     await page.setDefaultNavigationTimeout(0);
-
-    console.log("Going to URL");
-    await page.goto(url, {
-        waitUntil: 'networkidle2',
-        timeout: 0,
-    });
     
     return page;
 }
