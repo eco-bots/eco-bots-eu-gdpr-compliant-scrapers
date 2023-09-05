@@ -256,6 +256,49 @@ async function getLinksFromSelector(page, selector, url) {
     return links;
 }
 
+async function extractData(page, fileName, links, callContentSelector, openAI){
+    for (const link of links) {
+        const response = await page.goto(link);
+        if (response.status() === 404) {
+            continue;
+        };
+        const textContent = await page.$eval(callContentSelector, content => content.innerText);
+        let name, description, startDate, endDate, funding, requirements, contact, url;
+        await Promise.all([
+            extractNameWithRetry(textContent, openAI),
+            extractDescriptionWithRetry(textContent, openAI),
+            extractStartDateWithRetry(textContent, openAI),
+            extractEndDateWithRetry(textContent, openAI),
+            extractFundingWithRetry(textContent, openAI),
+            extractRequirementsWithRetry(textContent, openAI),
+            extractContactWithRetry(textContent, openAI),
+            page.url()
+        ])
+        .then((results) => {
+            console.log('GPT query successful.');
+            [name, description, startDate, endDate, funding, requirements, contact, url] = results;
+
+            if (!(startDate === 'NA')) startDate = cf.formatDate(startDate);
+            if (!(endDate === 'NA')) endDate = cf.formatDate(endDate);
+            // funding = cf.wordToNumber(funding);
+        })
+        .catch((error) => {
+            if (error.message.includes('Function failed after')) {
+                console.log('GPT query failed.'); 
+                [name, description, startDate, endDate, funding, requirements, contact, url] = ['NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA'];
+            }
+        });
+
+        const status = await evaluateStatus(endDate);
+        if (status === 'closed') {
+            continue;
+        };
+
+        await cf.writeToCSV(fileName, name, status, description, startDate, endDate, requirements, funding, contact, url);
+    }
+
+}
+
 module.exports = {
     initiate,
     escapeCSV,
@@ -274,5 +317,6 @@ module.exports = {
     readCSV,
     wordToNumber,
     getLinksFromSelector,
+    extractData,
 };
 
