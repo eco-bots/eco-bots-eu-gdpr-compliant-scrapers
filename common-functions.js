@@ -37,7 +37,17 @@ function escapeCSV(str) {
     }
 }
 
-function prepareCSV(header, fileName) {
+function prepareCSV(fileName) {
+    const header = ['name',
+                'status',
+                'description',
+                'start_date',
+                'end_date',
+                'requirements',
+                'funding',
+                'contact',
+                'url',];
+
     let csvContent = header.join(',') + '\n';
 
     fs.writeFile(fileName, csvContent, (err) => {
