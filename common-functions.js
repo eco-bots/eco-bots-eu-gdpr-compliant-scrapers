@@ -294,7 +294,7 @@ async function extractData(page, fileName, links, callContentSelector, openAI){
             continue;
         };
 
-        await cf.writeToCSV(fileName, name, status, description, startDate, endDate, requirements, funding, contact, url);
+        await writeToCSV(fileName, name, status, description, startDate, endDate, requirements, funding, contact, url);
     }
 
 }

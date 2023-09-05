@@ -15,56 +15,27 @@ async function main() {
         cf.prepareCSV(websiteDatum.fileName);
         await page.goto(websiteDatum.url);
 
-        const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
-
+        let pageLinks;
         if (websiteDatum.pageVariant === 'pagination') {
-            
-        };
+            pageLinks = await cf.getLinksFromSelector(page, websiteDatum.pageSelector, websiteDatum.url);
 
-        for (const link of linksToOpenCalls) {
-            const response = await page.goto(link);
-            if (response.status() === 404) {
-                continue;
-            };
-    
-            const textContent = await page.$eval(websiteDatum.callContentSelector, content => content.innerText);
-            let name, description, startDate, endDate, funding, requirements, contact, url;
-            await Promise.all([
-                cf.extractNameWithRetry(textContent, openAI),
-                cf.extractDescriptionWithRetry(textContent, openAI),
-                cf.extractStartDateWithRetry(textContent, openAI),
-                cf.extractEndDateWithRetry(textContent, openAI),
-                cf.extractFundingWithRetry(textContent, openAI),
-                cf.extractRequirementsWithRetry(textContent, openAI),
-                cf.extractContactWithRetry(textContent, openAI),
-                page.url()
-            ])
-            .then((results) => {
-                console.log('GPT query successful.');
-                [name, description, startDate, endDate, funding, requirements, contact, url] = results;
-    
-                if (!(startDate === 'NA')) startDate = cf.formatDate(startDate);
-                if (!(endDate === 'NA')) endDate = cf.formatDate(endDate);
-                // funding = cf.wordToNumber(funding);
-            })
-            .catch((error) => {
-                if (error.message.includes('Function failed after')) {
-                    console.log('GPT query failed.'); 
-                    [name, description, startDate, endDate, funding, requirements, contact, url] = ['NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA'];
-                }
-            });
-    
-            const status = await cf.evaluateStatus(endDate);
-            if (status === 'closed') {
-                continue;
-            };
-    
-            await cf.writeToCSV(websiteDatum.fileName, name, status, description, startDate, endDate, requirements, funding, contact, url);
-        };
-
-        await page.close();
-        console.log('SCRAPING COMPLETE');
+            for (const pageLink of pageLinks) {
+                const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
+                await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, websiteDatum.callContentSelector, openAI);
+                await page.goto(pageLink);
+            }
+        } else if (websiteDatum.pageVariant === 'showMore') {
+            await cf.clickButtonWhileVisible(page, websiteDatum.buttonSelector);
+            const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
+            await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, websiteDatum.callContentSelector, openAI);
+        } else {
+            const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
+            await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, websiteDatum.callContentSelector, openAI);
+        }
     };
+
+    await page.close();
+    console.log('SCRAPING COMPLETE');
 
 };
 
