@@ -1,4 +1,5 @@
 const fs = require('fs');
+const csv = require("csv-parser");
 
 const moment = require('moment');
 const puppeteer = require("puppeteer-extra");
@@ -120,26 +121,8 @@ async function evaluateStatus(endDate) {
     };
 }
 
-async function extractApplicationUrl(text, openAI) {
-    const applicationUrlPromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the application URL of the project from the text. Return only the URL itself. If the URL is not given say NA.' }],
-        model: 'gpt-3.5-turbo',
-    });
-
-    return applicationUrlPromise;
-}
-
-async function extractDocumentUrls(text, openAI) {
-    const documentUrlsPromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the document URLs of the project that are not application URLs from the text. Return only the URLs itself. If the URLs are not given say NA.' }],
-        model: 'gpt-3.5-turbo',
-    });
-
-    return documentUrlsPromise;
-}
-
 async function writeToCSV(fileName, name, status, description, start_date, end_date,
-                          requirements, funding, contact, url, applicationUrl, documentUrls) {
+                          requirements, funding, contact, url) {
     let newLine = escapeCSV(name) + ',' +
             escapeCSV(status) + ',' +
             escapeCSV(description) + ',' + 
@@ -148,9 +131,7 @@ async function writeToCSV(fileName, name, status, description, start_date, end_d
             escapeCSV(requirements) + ',' +
             escapeCSV(funding) + ',' +
             escapeCSV(contact) + ',' +
-            escapeCSV(url) + ',' + 
-            escapeCSV(applicationUrl) + ',' + 
-            escapeCSV(documentUrls) + ',' + '\n'; 
+            escapeCSV(url) + ',' + '\n'; 
     fs.appendFile(fileName, newLine, (err) => {
         if (err) throw err;
         console.log('CSV UPDATED');
@@ -214,7 +195,7 @@ function wordToNumber(str) {
     const regex = /([\d,.\s]+)\s*(thousand|million|billion|trillion)?/i;
     const match = str.match(regex);
   
-    if (!match) return NaN;
+    if (!match) return 'NA';
   
     let [, number, wordMultiplier] = match;
     
@@ -228,7 +209,23 @@ function wordToNumber(str) {
     }
   
     return number;
-  }
+}
+
+async function readCSV(fileName) {
+    const websiteData = [];
+    
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(fileName)
+        .pipe(csv())
+        .on('data', (data) => websiteData.push(data))
+        .on('end', () => {
+          resolve(websiteData);
+        })
+        .on('error', (error) => {
+          reject(error);
+        });
+    });
+}
 
 const extractNameWithRetry = withRetry(extractName);
 const extractDescriptionWithRetry = withRetry(extractDescription);
@@ -237,8 +234,6 @@ const extractEndDateWithRetry = withRetry(extractEndDate);
 const extractFundingWithRetry = withRetry(extractFunding);
 const extractRequirementsWithRetry = withRetry(extractRequirements);
 const extractContactWithRetry = withRetry(extractContact);
-const extractApplicationUrlWithRetry = withRetry(extractApplicationUrl);
-const extractDocumentUrlsWithRetry = withRetry(extractDocumentUrls);
 
 module.exports = {
     initiate,
@@ -252,11 +247,10 @@ module.exports = {
     extractRequirementsWithRetry,
     extractContactWithRetry,
     evaluateStatus,
-    extractApplicationUrlWithRetry,
-    extractDocumentUrlsWithRetry,
     writeToCSV,
     clickButtonWhileVisible,
     login,
+    readCSV,
     wordToNumber,
 };
 
