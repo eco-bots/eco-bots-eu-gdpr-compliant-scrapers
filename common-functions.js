@@ -90,7 +90,6 @@ async function extractFunding(text, openAI) {
     });
 
     return fundingPromise; 
-    //funding.choices[0]['message']['content'];
 }
 
 async function extractRequirements(text, openAI) {
@@ -205,6 +204,33 @@ const withRetry = (fn, maxRetries = 3, delay = 5000, timeout = 20000) => {
       }
     };
 };
+
+function wordToNumber(str) {
+    const wordMultipliers = {
+      'thousand': 1e3,
+      'million': 1e6,
+      'billion': 1e9,
+      'trillion': 1e12,
+    };
+  
+    const regex = /([\d,.\s]+)\s*(thousand|million|billion|trillion)?/i;
+    const match = str.match(regex);
+  
+    if (!match) return NaN;
+  
+    let [, number, wordMultiplier] = match;
+    
+    number = parseFloat(number.replace(/[^0-9.]/g, ''));
+    
+    if (wordMultiplier) {
+      wordMultiplier = wordMultiplier.toLowerCase();
+      if (wordMultipliers[wordMultiplier]) {
+        number *= wordMultipliers[wordMultiplier];
+      }
+    }
+  
+    return number;
+  }
 
 const extractNameWithRetry = withRetry(extractName);
 const extractDescriptionWithRetry = withRetry(extractDescription);
