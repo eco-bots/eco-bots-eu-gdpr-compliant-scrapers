@@ -178,32 +178,30 @@ async function login(page, username, password, usernameSelector, passwordSelecto
     await page.waitForTimeout(1000);
 }
 
-const withRetry = (fn, maxRetries = 3, delay = 5000, timeout = 20000) => {
-    return async (...args) => {
-      let retries = 0;
-      let currentDelay = delay;
-  
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => {
-          reject(new Error('Function timed out.'));
-        }, timeout);
-      });
-  
-      while (retries < maxRetries) {
-        const fnPromise = fn(...args);
-        try {
-          return await Promise.race([fnPromise, timeoutPromise]);
-        } catch (error) {
-          retries++;
-          if (retries >= maxRetries) {
-            throw new Error(`Function failed after ${maxRetries} retries.`);
-          }
-          await new Promise(resolve => setTimeout(resolve, currentDelay));
-          currentDelay = currentDelay * 2;
+function withRetry(fn, maxRetries = 3, delay = 500) {
+    return async function (...args) {
+        for (let i = 0; i <= maxRetries; i++) {
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    reject(new Error('Request timed out.'));
+                }, delay * Math.pow(2, i));
+            });
+
+            try {
+                const result = await Promise.race([fn(...args), timeoutPromise]);
+                return result.choices[0]['message']['content'];
+            } catch (error) {
+                console.error(`Attempt ${i} failed: ${error.message}. Retrying...`);
+                
+                if (i === maxRetries) {
+                    throw new Error(`Function failed after ${maxRetries} retries.`);
+                }
+
+                await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+            }
         }
-      }
     };
-};
+}
 
 function wordToNumber(str) {
     const wordMultipliers = {
@@ -259,5 +257,6 @@ module.exports = {
     writeToCSV,
     clickButtonWhileVisible,
     login,
+    wordToNumber,
 };
 
