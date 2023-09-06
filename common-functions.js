@@ -89,7 +89,7 @@ async function extractEndDate(text, openAI) {
 
 async function extractFunding(text, openAI) {
     const fundingPromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the total funding or budget amount of the project from the text without currency. Exclude any additional text. If the funding is not given say NA.' }],
+        messages: [{ role: 'user', content: text + 'Extract the total funding or budget amount of the project from the text. Exclude any additional text. If the funding is not given say NA.' }],
         model: 'gpt-3.5-turbo',
     });
 
@@ -107,7 +107,7 @@ async function extractRequirements(text, openAI) {
 
 async function extractContact(text, openAI) {
     const contactPromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the name, email, phone number of the person or institution from the text. Return the shortest response possible. If the contact information is not given say NA.' }],
+        messages: [{ role: 'user', content: text + 'Extract the contact information of the person or institution from the text. Return the shortest response possible. If the contact information is not given say NA.' }],
         model: 'gpt-3.5-turbo',
     });
 
@@ -115,6 +115,10 @@ async function extractContact(text, openAI) {
 }
 
 async function evaluateStatus(endDate) {
+    if (endDate === 'NA'){
+        return 'NA';
+    }
+
     const today = moment();
     const end = moment(endDate, 'DD.MM.YYYY');
     if (today.isAfter(end)) {
@@ -274,11 +278,18 @@ function formatNumber(number) {
 }
 
 async function extractData(page, fileName, links, callContentSelector, openAI){
+    const url = await page.url();
+    const urlRoot = new URL(url).origin;
     for (const link of links) {
         const response = await page.goto(link);
         if (response.status() === 404) {
             continue;
         };
+
+        if (!link.startsWith(urlRoot)) {
+            continue;
+        };
+
         const textContent = await page.$eval(callContentSelector, content => content.innerText);
         let name, description, startDate, endDate, funding, requirements, contact, url;
         await Promise.all([
