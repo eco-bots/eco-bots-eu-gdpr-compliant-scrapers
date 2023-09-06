@@ -257,6 +257,10 @@ async function getLinksFromSelector(page, selector, url) {
     return links;
 }
 
+function formatDate(date) {
+    return moment(date, 'DD.MM.YYYY').format('DD MMMM YYYY');
+}
+
 async function extractData(page, fileName, links, callContentSelector, openAI){
     for (const link of links) {
         const response = await page.goto(link);
@@ -279,14 +283,16 @@ async function extractData(page, fileName, links, callContentSelector, openAI){
             console.log('GPT query successful.');
             [name, description, startDate, endDate, funding, requirements, contact, url] = results;
 
-            if (!(startDate === 'NA')) startDate = cf.formatDate(startDate);
-            if (!(endDate === 'NA')) endDate = cf.formatDate(endDate);
+            if (!(startDate === 'NA')) startDate = formatDate(startDate);
+            if (!(endDate === 'NA')) endDate = formatDate(endDate);
             // funding = cf.wordToNumber(funding);
         })
         .catch((error) => {
             if (error.message.includes('Function failed after')) {
                 console.log('GPT query failed.'); 
                 [name, description, startDate, endDate, funding, requirements, contact, url] = ['NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA'];
+            } else {
+                throw error;
             }
         });
 
