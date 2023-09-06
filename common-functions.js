@@ -120,7 +120,7 @@ async function evaluateStatus(endDate) {
     }
 
     const today = moment();
-    const end = moment(endDate, 'DD.MM.YYYY');
+    const end = moment(endDate, 'DD MMMM YYYY');
     if (today.isAfter(end)) {
         return 'closed';
     } else {
