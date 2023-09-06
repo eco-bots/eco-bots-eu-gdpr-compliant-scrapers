@@ -70,22 +70,20 @@ async function extractDescription(text, openAI) {
 
 async function extractStartDate(text, openAI) {
     const startDatePromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the start date of the project from the text and return it in the format "DD.MM.YYYY". Return the shortest response possible.' }],
+        messages: [{ role: 'user', content: text + 'Extract the start date of the project from the text and return it in the format "DD.MM.YYYY". Return the shortest response possible. If the start date is not available say NA.' }],
         model: 'gpt-3.5-turbo',
     });
 
     return startDatePromise; 
-    //moment(startDate.choices[0]['message']['content'], 'DD.MM.YYYY').format('DD MMMM YYYY');
 }
 
 async function extractEndDate(text, openAI) {
     const endDatePromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the closing date of the project from the text and return it in the format "DD.MM.YYYY". Return the shortest response possible.' }],
+        messages: [{ role: 'user', content: text + 'Extract the closing date of the project from the text and return it in the format "DD.MM.YYYY". Return the shortest response possible. If the end date is not available say NA.' }],
         model: 'gpt-3.5-turbo',
     });
 
     return endDatePromise; 
-    //moment(endDate.choices[0]['message']['content'], 'DD.MM.YYYY').format('DD MMMM YYYY');
 }
 
 async function extractFunding(text, openAI) {
@@ -143,16 +141,19 @@ async function writeToCSV(fileName, name, status, description, start_date, end_d
 }
 
 async function clickButtonWhileVisible(page, selector){
-    let buttonVisible = true;
-    while (buttonVisible) {
-        const button = await page.$(selector);
-        if (button) {
+    while (true) {
+        try {
+            await page.waitForSelector(selector, { timeout: 20000 });
+            const button = await page.$(selector);
             await button.click();
-            await page.waitForTimeout(1000);
-        } else {
-            buttonVisible = false;
-        };
-    };
+        } catch (error) {
+            if (error.message.includes('Waiting for selector')) {
+                break;
+            } else {
+                throw error;
+            }
+        }
+    }
 }
 
 async function login(page, username, password, usernameSelector, passwordSelector, submitSelector) {
@@ -319,4 +320,3 @@ module.exports = {
     getLinksFromSelector,
     extractData,
 };
-
