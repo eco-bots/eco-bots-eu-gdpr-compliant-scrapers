@@ -170,7 +170,7 @@ async function login(page, username, password, usernameSelector, passwordSelecto
     await page.waitForTimeout(1000);
 }
 
-function withRetry(fn, maxRetries = 3, requestTimeout = 20000, initialDelay = 5000) {
+function withRetry(fn, maxRetries = 3, requestTimeout = 30000, initialDelay = 5000) {
     return async function (...args) {
         for (let i = 0; i <= maxRetries; i++) {
             const timeoutPromise = new Promise((_, reject) => {
