@@ -1,5 +1,6 @@
 const fs = require('fs');
 const csv = require("csv-parser");
+const numeral = require("numeral");
 
 const moment = require('moment');
 const puppeteer = require("puppeteer-extra");
@@ -258,7 +259,18 @@ async function getLinksFromSelector(page, selector, url) {
 }
 
 function formatDate(date) {
-    return moment(date, 'DD.MM.YYYY').format('DD MMMM YYYY');
+    const cleanedDate = date.match(/\b\d{2}\.\d{2}\.\d{4}\b/g);
+    if (cleanedDate) {
+        return moment(cleanedDate, 'DD.MM.YYYY').format('DD MMMM YYYY');
+    } else {
+        return 'NA';
+    }
+}
+
+function formatNumber(number) {
+    const cleanedNumber = number.replace(/[^\d.,]+/g, '');
+
+    return numeral(cleanedNumber).format('0,0');
 }
 
 async function extractData(page, fileName, links, callContentSelector, openAI){
@@ -285,7 +297,7 @@ async function extractData(page, fileName, links, callContentSelector, openAI){
 
             if (!(startDate === 'NA')) startDate = formatDate(startDate);
             if (!(endDate === 'NA')) endDate = formatDate(endDate);
-            // funding = cf.wordToNumber(funding);
+            if (!(funding === 'NA')) funding = formatNumber(funding);
         })
         .catch((error) => {
             if (error.message.includes('Function failed after')) {
