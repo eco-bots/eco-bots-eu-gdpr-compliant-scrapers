@@ -151,6 +151,7 @@ async function clickButtonWhileVisible(page, selector){
             await page.waitForSelector(selector, { timeout: 20000 });
             const button = await page.$(selector);
             await button.click();
+            await page.waitForTimeout(2000);
         } catch (error) {
             if (error.message.includes('Waiting for selector')) {
                 break;
