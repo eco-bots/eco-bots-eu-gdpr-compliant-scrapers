@@ -71,7 +71,7 @@ async function extractDescription(text, openAI) {
 
 async function extractStartDate(text, openAI) {
     const startDatePromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the start date of the project from the text and return it in the format "DD.MM.YYYY". Return the shortest response possible. If the start date is not available say NA.' }],
+        messages: [{ role: 'user', content: text + "Extract the date that indicates when the actual application period starts from the text. Do not confuse it with the update date of the article. Return it in 'DD.MM.YYYY' format. If not available, say 'NA'." }],
         model: 'gpt-3.5-turbo',
     });
 
@@ -80,7 +80,7 @@ async function extractStartDate(text, openAI) {
 
 async function extractEndDate(text, openAI) {
     const endDatePromise = openAI.chat.completions.create({
-        messages: [{ role: 'user', content: text + 'Extract the closing date of the project from the text and return it in the format "DD.MM.YYYY". Return the shortest response possible. If the end date is not available say NA.' }],
+        messages: [{ role: 'user', content: text + "Extract the date that indicates when the actual application period ends from the text. Do not confuse it with the update date of the article. Return it in 'DD.MM.YYYY' format. If not available, say 'NA'." }],
         model: 'gpt-3.5-turbo',
     });
 
@@ -292,12 +292,13 @@ async function extractData(page, fileName, links, callContentSelector, openAI){
         };
 
         const textContent = await page.$eval(callContentSelector, content => content.innerText);
+        const dateText = await extractTextAroundDates(textContent);
         let name, description, startDate, endDate, funding, requirements, contact, url;
         await Promise.all([
             extractNameWithRetry(textContent, openAI),
             extractDescriptionWithRetry(textContent, openAI),
-            extractStartDateWithRetry(textContent, openAI),
-            extractEndDateWithRetry(textContent, openAI),
+            extractStartDateWithRetry(dateText, openAI),
+            extractEndDateWithRetry(dateText, openAI),
             extractFundingWithRetry(textContent, openAI),
             extractRequirementsWithRetry(textContent, openAI),
             extractContactWithRetry(textContent, openAI),
@@ -328,6 +329,12 @@ async function extractData(page, fileName, links, callContentSelector, openAI){
         await writeToCSV(fileName, name, status, description, startDate, endDate, requirements, funding, contact, url);
     }
 
+}
+
+async function extractTextAroundDates(text, n = 50) {
+    const dateRegex = new RegExp(`[^]{0,${n}}(\\d{2}\\/\\d{2}\\/\\d{4})[^]{0,${n}}`, 'g');
+    const matches = text.match(dateRegex);
+    return matches ? matches.join(' ') : 'NA';
 }
 
 module.exports = {
