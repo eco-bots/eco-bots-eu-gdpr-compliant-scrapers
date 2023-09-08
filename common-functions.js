@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const csv = require("csv-parser");
 const numeral = require("numeral");
 
@@ -44,6 +45,11 @@ function prepareCSV(fileName) {
                 'url',];
 
     let csvContent = header.join(',') + '\n';
+
+    const directory = path.dirname(fileName);
+    if (!fs.existsSync(directory)) {
+        fs.mkdirSync(directory, { recursive: true });
+    }
 
     fs.writeFile(fileName, csvContent, (err) => {
         if (err) throw err;
@@ -278,7 +284,7 @@ function formatNumber(number) {
     return numeral(cleanedNumber).format('0,0');
 }
 
-async function extractData(page, fileName, links, callContentSelector, openAI){
+async function extractData(page, fileName, links, openAI){
     const url = await page.url();
     const urlRoot = new URL(url).origin;
     for (const link of links) {
@@ -291,7 +297,7 @@ async function extractData(page, fileName, links, callContentSelector, openAI){
             continue;
         };
 
-        const textContent = await page.$eval(callContentSelector, content => content.innerText);
+        const textContent = await page.$eval('body', content => content.innerText);
         const dateText = await extractTextAroundDates(textContent);
         let name, description, startDate, endDate, funding, requirements, contact, url;
         await Promise.all([
