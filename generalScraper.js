@@ -22,7 +22,7 @@ async function main() {
 
             for (const pageLink of pageLinks) {
                 const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
-                await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, websiteDatum.callContentSelector, openAI);
+                await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, openAI);
                 
                 await page.goto(pageLink);
             }
@@ -30,10 +30,10 @@ async function main() {
             await cf.clickButtonWhileVisible(page, websiteDatum.buttonSelector);
 
             const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
-            await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, websiteDatum.callContentSelector, openAI);
+            await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, openAI);
         } else {
             const linksToOpenCalls = await cf.getLinksFromSelector(page, websiteDatum.callSelector, websiteDatum.url);
-            await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, websiteDatum.callContentSelector, openAI);
+            await cf.extractData(page, websiteDatum.fileName, linksToOpenCalls, openAI);
         }
     };
 
