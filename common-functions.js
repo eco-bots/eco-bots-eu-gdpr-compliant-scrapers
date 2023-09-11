@@ -234,6 +234,12 @@ async function clickButtonWhileVisible(page, selector){
     }
 }
 
+function formatNumber(number) {
+    const cleanedNumber = number.replace(/[^\d.,]+/g, '');
+
+    return numeral(cleanedNumber).format('0,0');
+}
+
 function formatDate(date) {
     const cleanedDate = date.match(/\b\d{2}\.\d{2}\.\d{4}\b/g);
     if (cleanedDate) {
@@ -281,6 +287,7 @@ async function extractData(page, fileName, links, openAI){
 
             if (!(startDate === 'NA')) startDate = formatDate(startDate);
             if (!(endDate === 'NA')) endDate = formatDate(endDate);
+            if (!(funding === 'NA')) funding = formatNumber(funding);
         })
         .catch((error) => {
             if (error.message.includes('Function failed after')) {
