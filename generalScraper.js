@@ -8,7 +8,7 @@ const openAI = new openai({
 });
 
 async function main() {
-    const websiteData = await cf.readCSV('./websiteDataTest.csv');
+    const websiteData = await cf.readCSV('./websiteData.csv');
     const page = await cf.initiate();
     
     
