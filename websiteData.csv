@@ -10,3 +10,4 @@ fileName,url,pageVariant,pageSelector,buttonSelector,callSelector
 ./generalData/lu/nationalCurrent.csv,https://fonds-europeens.public.lu/fr/comment-participer/appels-en-cours.html,standard,,,.search-results a
 ./generalData/lu/nationalFuture.csv,https://fonds-europeens.public.lu/fr/comment-participer/appels-futurs.html,standard,,,.search-results a
 ./generalData/bg/national.csv,https://eumis2020.government.bg/en/s/Procedure/Active,standard,,,ul > li > ul ul a
+./generalData/fr/national.csv,https://www.europe-en-france.gouv.fr/fr/appels-a-projet,showMore,,#ancre-recherche-spe > ul > li > a,#ancre-recherche-spe > div.view-content li h2 a
