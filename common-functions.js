@@ -57,6 +57,39 @@ function prepareCSV(fileName) {
     });
 }
 
+async function readCSV(fileName) {
+    const websiteData = [];
+    
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(fileName)
+        .pipe(csv())
+        .on('data', (data) => websiteData.push(data))
+        .on('end', () => {
+          resolve(websiteData);
+        })
+        .on('error', (error) => {
+          reject(error);
+        });
+    });
+}
+
+async function writeToCSV(fileName, name, status, description, start_date, end_date,
+    requirements, funding, contact, url) {
+    let newLine = escapeCSV(name) + ',' +
+    escapeCSV(status) + ',' +
+    escapeCSV(description) + ',' + 
+    escapeCSV(start_date) + ',' + 
+    escapeCSV(end_date) + ',' + 
+    escapeCSV(requirements) + ',' +
+    escapeCSV(funding) + ',' +
+    escapeCSV(contact) + ',' +
+    escapeCSV(url) + ',' + '\n'; 
+    fs.appendFile(fileName, newLine, (err) => {
+        if (err) throw err;
+        console.log('CSV UPDATED');
+    });
+}
+
 async function extractName(text, openAI) {
     const namePromise = openAI.chat.completions.create({
         messages: [{ role: 'user', content: text + 'Extract the name of the project from the text. Return the shortest response possible.' }],
@@ -134,48 +167,6 @@ async function evaluateStatus(endDate) {
     };
 }
 
-async function writeToCSV(fileName, name, status, description, start_date, end_date,
-                          requirements, funding, contact, url) {
-    let newLine = escapeCSV(name) + ',' +
-            escapeCSV(status) + ',' +
-            escapeCSV(description) + ',' + 
-            escapeCSV(start_date) + ',' + 
-            escapeCSV(end_date) + ',' + 
-            escapeCSV(requirements) + ',' +
-            escapeCSV(funding) + ',' +
-            escapeCSV(contact) + ',' +
-            escapeCSV(url) + ',' + '\n'; 
-    fs.appendFile(fileName, newLine, (err) => {
-        if (err) throw err;
-        console.log('CSV UPDATED');
-    });
-}
-
-async function clickButtonWhileVisible(page, selector){
-    while (true) {
-        try {
-            await page.waitForSelector(selector, { timeout: 20000 });
-            const button = await page.$(selector);
-            await button.click();
-            await page.waitForTimeout(2000);
-        } catch (error) {
-            if (error.message.includes('Waiting for selector')) {
-                break;
-            } else {
-                throw error;
-            }
-        }
-    }
-}
-
-async function login(page, username, password, usernameSelector, passwordSelector, submitSelector) {
-    await page.waitForSelector(usernameSelector);
-    await page.type(usernameSelector, username);
-    await page.type(passwordSelector, password);
-    await page.click(submitSelector);
-    await page.waitForTimeout(1000);
-}
-
 function withRetry(fn, maxRetries = 3, requestTimeout = 30000, initialDelay = 5000) {
     return async function (...args) {
         for (let i = 0; i <= maxRetries; i++) {
@@ -199,49 +190,6 @@ function withRetry(fn, maxRetries = 3, requestTimeout = 30000, initialDelay = 50
             }
         }
     };
-}
-
-function wordToNumber(str) {
-    const wordMultipliers = {
-      'thousand': 1e3,
-      'million': 1e6,
-      'billion': 1e9,
-      'trillion': 1e12,
-    };
-  
-    const regex = /([\d,.\s]+)\s*(thousand|million|billion|trillion)?/i;
-    const match = str.match(regex);
-  
-    if (!match) return 'NA';
-  
-    let [, number, wordMultiplier] = match;
-    
-    number = parseFloat(number.replace(/[^0-9.]/g, ''));
-    
-    if (wordMultiplier) {
-      wordMultiplier = wordMultiplier.toLowerCase();
-      if (wordMultipliers[wordMultiplier]) {
-        number *= wordMultipliers[wordMultiplier];
-      }
-    }
-  
-    return number;
-}
-
-async function readCSV(fileName) {
-    const websiteData = [];
-    
-    return new Promise((resolve, reject) => {
-      fs.createReadStream(fileName)
-        .pipe(csv())
-        .on('data', (data) => websiteData.push(data))
-        .on('end', () => {
-          resolve(websiteData);
-        })
-        .on('error', (error) => {
-          reject(error);
-        });
-    });
 }
 
 const extractNameWithRetry = withRetry(extractName);
@@ -269,6 +217,23 @@ async function getLinksFromSelector(page, selector, url) {
     return links;
 }
 
+async function clickButtonWhileVisible(page, selector){
+    while (true) {
+        try {
+            await page.waitForSelector(selector, { timeout: 20000 });
+            const button = await page.$(selector);
+            await button.click();
+            await page.waitForTimeout(2000);
+        } catch (error) {
+            if (error.message.includes('Waiting for selector')) {
+                break;
+            } else {
+                throw error;
+            }
+        }
+    }
+}
+
 function formatDate(date) {
     const cleanedDate = date.match(/\b\d{2}\.\d{2}\.\d{4}\b/g);
     if (cleanedDate) {
@@ -278,10 +243,10 @@ function formatDate(date) {
     }
 }
 
-function formatNumber(number) {
-    const cleanedNumber = number.replace(/[^\d.,]+/g, '');
-
-    return numeral(cleanedNumber).format('0,0');
+async function extractTextAroundDates(text, n = 50) {
+    const dateRegex = new RegExp(`[^]{0,${n}}(\\d{2}\\/\\d{2}\\/\\d{4})[^]{0,${n}}`, 'g');
+    const matches = text.match(dateRegex);
+    return matches ? matches.join(' ') : 'NA';
 }
 
 async function extractData(page, fileName, links, openAI){
@@ -316,7 +281,6 @@ async function extractData(page, fileName, links, openAI){
 
             if (!(startDate === 'NA')) startDate = formatDate(startDate);
             if (!(endDate === 'NA')) endDate = formatDate(endDate);
-            if (!(funding === 'NA')) funding = formatNumber(funding);
         })
         .catch((error) => {
             if (error.message.includes('Function failed after')) {
@@ -337,12 +301,6 @@ async function extractData(page, fileName, links, openAI){
 
 }
 
-async function extractTextAroundDates(text, n = 50) {
-    const dateRegex = new RegExp(`[^]{0,${n}}(\\d{2}\\/\\d{2}\\/\\d{4})[^]{0,${n}}`, 'g');
-    const matches = text.match(dateRegex);
-    return matches ? matches.join(' ') : 'NA';
-}
-
 module.exports = {
     initiate,
     escapeCSV,
@@ -357,9 +315,7 @@ module.exports = {
     evaluateStatus,
     writeToCSV,
     clickButtonWhileVisible,
-    login,
     readCSV,
-    wordToNumber,
     getLinksFromSelector,
     extractData,
 };
