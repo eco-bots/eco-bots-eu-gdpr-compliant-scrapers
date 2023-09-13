@@ -2,7 +2,7 @@ const fs = require('fs');
 
 const openai = require("openai");
 const moment = require('moment');
-const {initiate, escapeCSV, prepareCSV} = require('./common-functions.js');
+const {initiate, escapeCSV, prepareCSV} = require('../../common-functions.js');
 
 const url = 'https://www.esinvesticijos.lt/kvietimai-2?_token=977c83.ZeDebUE95NiBa7K_cLCeT4iBI0DKGy_MhXkePwt07gY.D7WbIAtu0OzCCPnuAfnkCrjHdnSlUnD06xp3Z0AF2HYOlJYGGXCUsdIC1Q&query=&submission_to=&status%5B%5D=45&ordering=';
 const apiKey = fs.readFileSync('./api_key', 'utf-8').trim();
